@@ -63,7 +63,7 @@ st.markdown(
 )
 
 # Adding Background Image
-background_image_url = "https://www.strategyand.pwc.com/m1/en/strategic-foresight/sector-strategies/healthcare/ai-powered-healthcare-solutions/img01-section1.jpg"
+background_image_url = "https://img.freepik.com/premium-photo/healthcare-professional-interacts-with-futuristic-medical-ai-interface-displaying-data-diagnostics_124507-300565.jpg"
 
 page_bg_img = f"""
 <style>
