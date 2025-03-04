@@ -2,8 +2,8 @@ import streamlit as st
 import pickle
 from streamlit_option_menu import option_menu
 import numpy as np
-import warnings
-warnings.filterwarnings("ignore", category=UserWarning)
+#import warnings
+#warnings.filterwarnings("ignore", category=UserWarning)
 
 # Change Name & Logo
 st.set_page_config(page_title="Disease Prediction", page_icon="⚕️", layout="wide")
