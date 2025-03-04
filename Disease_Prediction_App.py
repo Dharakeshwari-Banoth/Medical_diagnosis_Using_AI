@@ -1,22 +1,69 @@
-import streamlit as st # type: ignore
+import streamlit as st
 import pickle
-from streamlit_option_menu import option_menu # type: ignore
+from streamlit_option_menu import option_menu
+import numpy as np
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
 
 # Change Name & Logo
-st.set_page_config(page_title="Disease Prediction", page_icon="⚕️")
+st.set_page_config(page_title="Disease Prediction", page_icon="⚕️", layout="wide")
 
-# Hiding Streamlit add-ons
-hide_st_style = """
-            <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
-            </style>
-            """
-st.markdown(hide_st_style, unsafe_allow_html=True)
+st.markdown(
+    """
+    <style>
+    body {
+        font-family: 'Arial', sans-serif;
+    }
+    [data-testid="stSidebar"] {
+        background-color: rgba(44, 62, 80, 0.7); /* Transparent sidebar */
+        color: white;
+    }
+    .stButton>button {
+        background-color: #ff5722;
+        color: white;
+        font-weight: bold;
+        padding: 12px 26px;
+        border-radius: 10px;
+        border: none;
+        transition: 0.3s;
+        width: 100%;
+        font-size: 18px;
+    }
+    .stButton>button:hover {
+        background-color: #e64a19;
+        transform: scale(1.05);
+    }
+    .main-header {
+        font-size: 44px;
+        color: #FFFFFF;
+        text-align: center;
+        margin-bottom: 25px;
+        text-shadow: 3px 3px 6px #000000;
+    }
+    .prediction-container {
+        background-color: rgba(255, 255, 255, 0.3);
+        padding: 30px;
+        border-radius: 20px;
+        margin-top: 25px;
+        box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(12px);
+        text-align: center;
+    }
+    .slider-label {
+        font-size: 20px;
+        font-weight: bold;
+        color: #FFFFFF;
+    }
+    .get-started {
+        margin-top: 20px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 # Adding Background Image
-background_image_url = "https://www.strategyand.pwc.com/m1/en/strategic-foresight/sector-strategies/healthcare/ai-powered-healthcare-solutions/img01-section1.jpg"  # Replace with your image URL
+background_image_url = "https://www.strategyand.pwc.com/m1/en/strategic-foresight/sector-strategies/healthcare/ai-powered-healthcare-solutions/img01-section1.jpg"
 
 page_bg_img = f"""
 <style>
@@ -27,7 +74,6 @@ background-position: center;
 background-repeat: no-repeat;
 background-attachment: fixed;
 }}
-
 [data-testid="stAppViewContainer"]::before {{
 content: "";
 position: absolute;
@@ -35,13 +81,65 @@ top: 0;
 left: 0;
 width: 100%;
 height: 100%;
-background-color: rgba(0, 0, 0, 0.7);
+background-color: rgba(0, 0, 0, 0.6);
 }}
 </style>
 """
 st.markdown(page_bg_img, unsafe_allow_html=True)
 
 # Load the saved models
+@st.cache_resource
+def load_models():
+    return {
+        'diabetes': pickle.load(open('Models/diabetes_model.sav', 'rb')),
+        'heart_disease': pickle.load(open('Models/heart_disease_model.sav', 'rb')),
+        'parkinsons': pickle.load(open('Models/parkinsons_model.sav', 'rb')),
+        'lung_cancer': pickle.load(open('Models/lungs_disease_model.sav', 'rb')),
+        'thyroid': pickle.load(open('Models/Thyroid_model.sav', 'rb'))
+    }
+
+models = load_models()
+
+with st.sidebar:
+    st.markdown("<h1 style='text-align: center; color: white;'>Health Prediction</h1>", unsafe_allow_html=True)
+    selected = option_menu(
+        "Disease Prediction",
+        ["Diabetes Prediction", "Heart Disease Prediction", "Parkinsons Prediction", "Lung Cancer Prediction", "Hypo-Thyroid Prediction"],
+        icons=["activity", "heart", "person", "lungs", "clipboard2-pulse"],
+        menu_icon="hospital",
+        default_index=0,  # Ensures no page is selected by default
+        styles={
+            "container": {"padding": "5px", "background-color": "rgba(0,0,0,0.5)"},
+            "icon": {"color": "white", "font-size": "25px"},
+            "nav-link": {"font-size": "18px", "text-align": "left", "margin": "0px", "--hover-color": "#ff5722"},
+            "nav-link-selected": {"background-color": "#ff5722"},
+        }
+    )
+
+# Display Input Function
+def display_input(label, tooltip, key, type="text", min_value=None, max_value=None, prefix=""):
+    unique_key = f"{prefix}{key}"
+    if type == "text":
+        return st.text_input(label, key=unique_key, help=tooltip)
+    elif type == "number":
+        return st.number_input(label, key=unique_key, help=tooltip, step=1, min_value=min_value, max_value=max_value)
+    elif type == "slider":
+        return st.slider(label, min_value=min_value, max_value=max_value, key=unique_key, help=tooltip)
+
+# Prediction Pages
+st.markdown(f"<h1 class='main-header'>{selected}</h1>", unsafe_allow_html=True)
+
+def predict_disease(model_key, inputs):
+    if any(i == "" or i is None for i in inputs):  # Check for empty or None values
+        st.error("⚠️ Please fill in all fields before predicting.")
+    else:
+        input_array = np.array([inputs], dtype=np.float64)
+        prediction = models[model_key].predict(input_array)
+        diagnosis = f'The person has {selected}' if prediction[0] == 1 else f'The person does not have {selected}'
+        st.success(diagnosis)
+
+
+  # Load the saved models
 models = {
     'diabetes': pickle.load(open('Models/diabetes_model.sav', 'rb')),
     'heart_disease': pickle.load(open('Models/heart_disease_model.sav', 'rb')),
@@ -50,15 +148,6 @@ models = {
     'thyroid': pickle.load(open('Models/Thyroid_model.sav', 'rb'))
 }
 
-# Create a dropdown menu for disease prediction
-selected = st.selectbox(
-    'Select a Disease to Predict',
-    ['Diabetes Prediction',
-     'Heart Disease Prediction',
-     'Parkinsons Prediction',
-     'Lung Cancer Prediction',
-     'Hypo-Thyroid Prediction']
-)
 
 def display_input(label, tooltip, key, type="text"):
     if type == "text":
@@ -68,7 +157,7 @@ def display_input(label, tooltip, key, type="text"):
 
 # Diabetes Prediction Page
 if selected == 'Diabetes Prediction':
-    st.title('Diabetes')
+    #st.title('Diabetes')
     st.write("Enter the following details to predict diabetes:")
 
     Pregnancies = display_input('Number of Pregnancies', 'Enter number of times pregnant', 'Pregnancies', 'number')
@@ -88,12 +177,12 @@ if selected == 'Diabetes Prediction':
 
 # Heart Disease Prediction Page
 if selected == 'Heart Disease Prediction':
-    st.title('Heart Disease')
+    #st.title('Heart Disease')
     st.write("Enter the following details to predict heart disease:")
 
     age = display_input('Age', 'Enter age of the person', 'age', 'number')
     sex = display_input('Sex (1 = male; 0 = female)', 'Enter sex of the person', 'sex', 'number')
-    cp = display_input('Chest Pain types (0, 1, 2, 3)', 'Enter chest pain type', 'cp', 'number')
+    cp = display_input('Chest Pain types (0 = Typical Angina, 1 = Atypical Angina, 2 = Non-anginal Pain, 3 = Asymptomatic)', 'Enter chest pain type', 'cp', 'number')
     trestbps = display_input('Resting Blood Pressure', 'Enter resting blood pressure', 'trestbps', 'number')
     chol = display_input('Serum Cholesterol in mg/dl', 'Enter serum cholesterol', 'chol', 'number')
     fbs = display_input('Fasting Blood Sugar > 120 mg/dl (1 = true; 0 = false)', 'Enter fasting blood sugar', 'fbs', 'number')
@@ -113,7 +202,7 @@ if selected == 'Heart Disease Prediction':
 
 # Parkinson's Prediction Page
 if selected == "Parkinsons Prediction":
-    st.title("Parkinson's Disease")
+    #st.title("Parkinson's Disease")
     st.write("Enter the following details to predict Parkinson's disease:")
 
     fo = display_input('MDVP:Fo(Hz)', 'Enter MDVP:Fo(Hz) value', 'fo', 'number')
@@ -147,7 +236,7 @@ if selected == "Parkinsons Prediction":
 
 # Lung Cancer Prediction Page
 if selected == "Lung Cancer Prediction":
-    st.title("Lung Cancer")
+    #st.title("Lung Cancer")
     st.write("Enter the following details to predict lung cancer:")
 
     GENDER = display_input('Gender (1 = Male; 0 = Female)', 'Enter gender of the person', 'GENDER', 'number')
@@ -174,7 +263,7 @@ if selected == "Lung Cancer Prediction":
 
 # Hypo-Thyroid Prediction Page
 if selected == "Hypo-Thyroid Prediction":
-    st.title("Hypo-Thyroid")
+    #st.title("Hypo-Thyroid")
     st.write("Enter the following details to predict hypo-thyroid disease:")
 
     age = display_input('Age', 'Enter age of the person', 'age', 'number')
@@ -190,3 +279,4 @@ if selected == "Hypo-Thyroid Prediction":
         thyroid_prediction = models['thyroid'].predict([[age, sex, on_thyroxine, tsh, t3_measured, t3, tt4]])
         thyroid_diagnosis = "The person has Hypo-Thyroid disease" if thyroid_prediction[0] == 1 else "The person does not have Hypo-Thyroid disease"
         st.success(thyroid_diagnosis)
+
